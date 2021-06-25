@@ -65,7 +65,7 @@ def build_discriminator(image_size, latent_code_length):
     y = Conv2D(1024, (3, 3), padding="same")(y)
     y = LeakyReLU()(y)
     y = Flatten()(y)
-    y = Dense(1,activation="sigmoid")(y)
+    y = Dense(1)(y)
     return Model([x, z], [y])
 
 def build_train_step(generator, encoder, discriminator):
@@ -85,10 +85,10 @@ def build_train_step(generator, encoder, discriminator):
         d_preds = discriminator(d_inputs)
         pred_g, pred_e = tf.split(d_preds,num_or_size_splits=2, axis=0)
 
-        d_loss = tf.reduce_mean(-tf.math.log(pred_g + 1e-8)) + \
-                 tf.reduce_mean(-tf.math.log(1 - pred_e + 1e-8))
-        g_loss = tf.reduce_mean(-tf.math.log(1 - pred_g + 1e-8))
-        e_loss = tf.reduce_mean(-tf.math.log(pred_e + 1e-8))
+        d_loss = tf.reduce_mean(tf.nn.softplus(pred_g)) + \
+                 tf.reduce_mean(tf.nn.softplus(-pred_e))
+        g_loss = tf.reduce_mean(tf.nn.softplus(-pred_g))
+        e_loss = tf.reduce_mean(tf.nn.softplus(pred_e))
 
         d_gradients = tf.gradients(d_loss, discriminator.trainable_variables)
         g_gradients = tf.gradients(g_loss, generator.trainable_variables)
